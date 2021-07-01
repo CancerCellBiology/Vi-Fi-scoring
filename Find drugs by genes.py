@@ -134,7 +134,7 @@ def FDA_drugs(df): #finds FDA approved drugs using from FDA_list_ChEMBL_lower.xl
 
 """define working directory"""
 #os.chdir('C:\\Vi-Fi scoring')
-os.chdir('C:\\Lab\\Python\\Virus Paper\\Github\\')
+os.chdir('C:\\Vi-Fi\\')
 #Part1: INPUT gene list of potential drug targets
 file_name=input('Enter gene list file name in excel (for exapmle "Test_targets"):')
 df_in= pd.read_excel(file_name+'.xlsx')
@@ -154,6 +154,6 @@ mining_drugs= find_dsigdb(df_in, 'mining')
 mining_counts= count_targets(mining_drugs)
 mining_result= FDA_drugs(mining_counts)
 mining_result.to_excel(os.path.join(out_dir,file_name+'_DSigDB_mining.xlsx'))
-os.chdir('C:\\Lab\\Python\\Virus Paper\\Github\\')
+os.chdir('C:\\Vi-Fi\\')
 
 
