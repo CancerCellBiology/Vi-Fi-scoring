@@ -14,7 +14,7 @@ from matplotlib.lines import Line2D
 import os
 
 """define working directory"""
-os.chdir('C:\\Vi-Fi scoring')
+os.chdir('C:\\Vi-Fi\\')
 df= pd.read_excel('Combined ViFi scoring.xlsx')
 labels=list(dict.fromkeys(df.drug_class))
 custom_color=['#b03315', '#e58725', '#FBC570','#ea96a3', '#ab9e47', '#97b9e3', '#7fa946', '#926ea9','#49d1b1', '#301D5B']
@@ -34,7 +34,6 @@ for dtype in list(dict.fromkeys(df3.drug_class_n)):
 #create legends
 legend_elements1=[]
 for dtype in list(dict.fromkeys(df.drug_class_n)):
-    #legend_elements1.append(Circle((0,0), 1, color=custom_color[dtype], label=labels[dtype]))
     legend_elements1.append(Line2D([], [], marker='o', color=custom_color[dtype], linestyle='None', label=labels[dtype], markersize=10, markeredgecolor='k'))
 legend1=ax.legend(handles=legend_elements1, loc='upper right', bbox_to_anchor=(1.12, 1.25), title="Drug type", prop={'size': 13}, edgecolor='#323232')
 legend1.get_title().set_fontsize('15')
@@ -82,4 +81,4 @@ for drug in list(dict.fromkeys(annotation)):
     xy = list(df_xy.loc[drug])
     ax.annotate(drug, xy, xytext=(xy[0]+annotation[drug][0], xy[1]+annotation[drug][1]), size=16, textcoords='data',
                 arrowprops=dict(facecolor='#323232', width=1, headwidth=7, shrink=0))
-fig.savefig('2D plot Fig5 small v2.pdf', bbox_inches = 'tight')
+fig.savefig('Vi-Fi plot.pdf', bbox_inches = 'tight')
