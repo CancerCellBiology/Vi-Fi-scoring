@@ -43,4 +43,6 @@ https://maayanlab.cloud/L1000FWD/download_page (CD signatures (up/down gene sets
 
 Vi-Fi combination scores: takes a list of drugs and returns a table with fibrotic and viral scores for each possible drug combination. This algorithm uses saved fibrotic and viral signatures from Vi-Fi Signatures folder to speed the process. Use Test_drugs as a test file and as example of input data. Currently this code works only if Vi-Fi Signatures folder was created and individual scores were calculated for each drug with Vi-Fi scoring.
 
-Vi-Fi plot: code used for creation of 2D Vi-Fi plot.
+Vi-Fi plot: code used for creation of 2D Vi-Fi plot. Use "Combined ViFi scoring.xlsx" as an input example.
+
+All code results are published at Scientific Reports: https://www.nature.com/articles/s41598-021-90701-w
