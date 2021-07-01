@@ -72,31 +72,88 @@ def name_ids(df): #adds drug names and max clinical trial phases for ChEMBL drug
     df.insert(2,'max_phase',phase_list)
     return df
 
-"""define working directory"""
-os.chdir('C:\\Vi-Fi scoring')
-#Part1: INPUT gene lists
-file_name=input('Gene list file:')
-df_input= pd.read_excel(file_name+'.xlsx')
-df_genes= to_chembl(df_input)
-gene_list = list(dict.fromkeys(df_genes['Gene']))
-chEMBL_id = list(dict.fromkeys(df_genes['ChEMBLid']))
-#Part2: create DataFrame (df_ch) with CHEMBL drug ids for each input gene 
-df_ch= pd.DataFrame()
-for id in chEMBL_id:
-    drugs = new_client.mechanism.filter(target_chembl_id__exact=id).only(['molecule_chembl_id'])
-    drug_list= list()
-    for act in drugs:
-        if act['molecule_chembl_id'] in drug_list: #check for duplication
-            continue
+def find_chembl(df):
+    """Finds drugs for targets from df in ChEMBL database"""
+    df_genes= to_chembl(df)
+    gene_list = list(dict.fromkeys(df_genes['Gene']))
+    chEMBL_id = list(dict.fromkeys(df_genes['ChEMBLid']))
+    #Part2: create DataFrame (df_ch) with CHEMBL drug ids for each input gene 
+    df_ch= pd.DataFrame()
+    for id in chEMBL_id:
+        drugs = new_client.mechanism.filter(target_chembl_id__exact=id).only(['molecule_chembl_id'])
+        drug_list= list()
+        for act in drugs:
+            if act['molecule_chembl_id'] in drug_list: #check for duplication
+                continue
+            else:
+                drug_list.append(act['molecule_chembl_id'])
+        if len(drugs)==0: #record NaN values for genes with no drugs, to keep same df size
+            df_temp=pd.DataFrame([np.NaN])
         else:
-            drug_list.append(act['molecule_chembl_id'])
-    if len(drugs)==0: #record NaN values for genes with no drugs, to keep same df size
-        df_temp=pd.DataFrame([np.NaN])
+            df_temp=pd.DataFrame(drug_list)
+        df_ch= pd.concat([df_ch, df_temp], axis=1)
+    df_ch.columns=gene_list
+    #Part3: create output DataFrame with drug targets and drug names
+    df_targets= count_targets(df_ch)
+    df_names= name_ids(df_targets)
+    return df_names
+
+def find_dsigdb(df_input, DB): 
+    """Finds drugs that target listed genes in DSigDB databases:
+        kinases- data for kinase assays
+        mining- data for text mining"""
+    if DB=='kinases':
+        df=pd.read_excel('DSigDB_kinases.xlsx')
+    elif DB=='mining':
+        df=pd.read_excel('DSigDB_mining.xlsx')
     else:
-        df_temp=pd.DataFrame(drug_list)
-    df_ch= pd.concat([df_ch, df_temp], axis=1)
-df_ch.columns=gene_list
-#Part3: create output DataFrame with drug targets and drug names
-df_targets= count_targets(df_ch)
-df_names= name_ids(df_targets)
-df_names.to_excel(file_name+'_ChEMBL_Results.xlsx')
+        return print('invalid DB')
+    input_genes = set(dict.fromkeys(df_input['Gene']))
+    DB_genes= set(dict.fromkeys(df['Gene']))
+    genes= input_genes & DB_genes
+    df_out= pd.DataFrame()
+    for gene in genes:
+        df1=df[df['Gene']==gene]
+        drugs= set(dict.fromkeys(df1['Drug']))
+        df_temp= pd.DataFrame(drugs)
+        df_out= pd.concat([df_out, df_temp], axis=1)
+    df_out.columns= genes
+    return df_out
+ 
+def FDA_drugs(df): #finds FDA approved drugs using from FDA_list_ChEMBL_lower.xlsx 
+    df_FDA=pd.read_excel('FDA_list_ChEMBL.xlsx')
+    approved= list()
+    FDA_drugs= list(dict.fromkeys(df_FDA['drug_name']))
+    for drug in list(dict.fromkeys(df['Drug'])):
+        if drug in FDA_drugs:
+            approved.append('yes')
+        else:
+            approved.append('no')
+    df.insert(2,'FDA_approved', approved)
+    return df
+
+"""define working directory"""
+#os.chdir('C:\\Vi-Fi scoring')
+os.chdir('C:\\Vi-Fi\\')
+#Part1: INPUT gene list of potential drug targets
+file_name=input('Enter gene list file name in excel (for exapmle "Test_targets"):')
+df_in= pd.read_excel(file_name+'.xlsx')
+out_dir=os.path.join(os.getcwd(), 'Results')
+if not os.path.exists(out_dir):
+    os.mkdir(out_dir)
+#find drugs in ChEMBL
+df_chembl= find_chembl(df_in)
+df_chembl.to_excel(os.path.join(out_dir, file_name+'_ChEMBL_Results.xlsx'))
+#find drug targets in kinase inhibitors DSigDB databases and export to xlsx file
+kinases_drugs= find_dsigdb(df_in, 'kinases')
+kinases_counts= count_targets(kinases_drugs)
+kinases_result= FDA_drugs(kinases_counts)
+kinases_result.to_excel(os.path.join(out_dir,file_name+'_DSigDB_kinases.xlsx'))
+#find drug targets in text mininng and computational DSigDB databases and export to xlsx file
+mining_drugs= find_dsigdb(df_in, 'mining')
+mining_counts= count_targets(mining_drugs)
+mining_result= FDA_drugs(mining_counts)
+mining_result.to_excel(os.path.join(out_dir,file_name+'_DSigDB_mining.xlsx'))
+os.chdir('C:\\Vi-Fi\\')
+
+
