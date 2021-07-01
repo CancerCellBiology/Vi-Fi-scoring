@@ -18,11 +18,12 @@ def Score(df, score):
     return S
 
 """define working directory"""
-os.chdir('C:\\Vi-Fi scoring')
-input_file=input('Drug list:')
+os.chdir('C:\\Vi-Fi\\')
+"""First run Vi-Fi scoring to create individual drug signatures"""
+input_file=input('Enter drug list file name (for example "Test_drugs"):') 
 df_user= pd.read_excel(input_file+'.xlsx')
-drugs=list(dict.fromkeys(df_user['Name'].dropna()))
-other_drugs=list(dict.fromkeys(df_user['Name'].dropna()))
+drugs=list(dict.fromkeys(df_user['Drug'].dropna()))
+other_drugs=list(dict.fromkeys(df_user['Drug'].dropna()))
 df_score=pd.DataFrame()
 for drug1 in drugs:
     FS_list=[]
@@ -36,10 +37,10 @@ for drug1 in drugs:
     names_list=[]
     other_drugs.remove(drug1)
     for drug2 in other_drugs:        
-        dfV1= pd.read_excel('Vi-Fi Signatures\\'+drug1+'_Viral_sig.xlsx')
-        dfV2= pd.read_excel('Vi-Fi Signatures\\'+drug2+'_Viral_sig.xlsx')
-        dfF1= pd.read_excel('Vi-Fi Signatures\\'+drug1+'_Fibrosis_sig.xlsx')
-        dfF2= pd.read_excel('Vi-Fi Signatures\\'+drug2+'_Fibrosis_sig.xlsx')
+        dfV1= pd.read_excel(os.path.join('ViFi Signatures\\', drug1+'_Viral_sig.xlsx'))
+        dfV2= pd.read_excel(os.path.join('ViFi Signatures\\', drug2+'_Viral_sig.xlsx'))
+        dfF1= pd.read_excel(os.path.join('ViFi Signatures\\', drug1+'_Fibrosis_sig.xlsx'))
+        dfF2= pd.read_excel(os.path.join('ViFi Signatures\\', drug2+'_Fibrosis_sig.xlsx'))
         up_genes1= set(dict.fromkeys(dfV1.Gene[dfV1['change']=='up']))
         down_genes1= set(dict.fromkeys(dfV1.Gene[dfV1['change']=='down']))
         up_genes2= set(dict.fromkeys(dfV2.Gene[dfV2['change']=='up']))
@@ -52,12 +53,13 @@ for drug1 in drugs:
         FS2= Score(dfF2, 'FScore')
         VS1= Score(dfV1, 'VScore')
         VS2= Score(dfV2, 'VScore')
-        comb_up= list((up_genes1 | up_genes2) - (down_genes1 | down_genes2))
-        comb_down= list((down_genes1 | down_genes2)-(up_genes1 | up_genes2))
+        comb_up= list((up_genes1 | up_genes2) - (down_genes1 | down_genes2) & set(dfV1.index) & set(dfV2.index))
+        comb_down= list((down_genes1 | down_genes2)-(up_genes1 | up_genes2) & set(dfV1.index) & set(dfV2.index))
         df_Vcomb=pd.concat([dfV1.loc[comb_up].dropna(), dfV2.loc[comb_up].dropna(), dfV1.loc[comb_down].dropna(), dfV2.loc[comb_down].dropna()])
-        #df_comb=pd.concat([df1.loc[comb_up].dropna(), df2.loc[comb_up].dropna()])
         df_Vcomb.drop('Unnamed: 0', axis=1, inplace=True)
         df_Vcomb = df_Vcomb[~df_Vcomb.index.duplicated(keep='first')]
+        comb_up= list((up_genes1 | up_genes2) - (down_genes1 | down_genes2) & set(dfF1.index) & set(dfF2.index))
+        comb_down= list((down_genes1 | down_genes2)-(up_genes1 | up_genes2) & set(dfF1.index) & set(dfF2.index))
         df_Fcomb=pd.concat([dfF1.loc[comb_up].dropna(), dfF2.loc[comb_up].dropna(), dfF1.loc[comb_down].dropna(), dfF2.loc[comb_down].dropna()])
         df_Fcomb.drop('Unnamed: 0', axis=1, inplace=True)
         df_Fcomb = df_Fcomb[~df_Fcomb.index.duplicated(keep='first')]
@@ -76,4 +78,3 @@ for drug1 in drugs:
                                'VS_drug2': VS2_list, 'VS_combination': VS_list})
     df_score= pd.concat([df_score, df_temp])
 df_score.to_excel(input_file+'_combinations.xlsx')
-
